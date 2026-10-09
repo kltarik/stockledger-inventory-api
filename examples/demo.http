@@ -1,0 +1,71 @@
+# StockLedger demo story. Works with the VS Code "REST Client" extension and JetBrains IDEs:
+# open this file and click "Send Request" above each block, top to bottom.
+# Expects a freshly seeded database (ids below: keyboard = product 1, Warehouse A = warehouse 1).
+# Reset: docker compose down -v && docker compose up -d db, then restart the API.
+
+@base = http://localhost:3000
+@key = dev-demo-key
+
+### 1. Find the keyboard (reads are public, no key needed)
+GET {{base}}/products?query=keyboard
+
+### 2. Receive 15 keyboards into Warehouse A
+POST {{base}}/stock/receipts
+Content-Type: application/json
+x-api-key: {{key}}
+
+{ "productId": 1, "warehouseId": 1, "quantity": 15, "reference": "PO-1001" }
+
+### 3. Available stock is now 15
+GET {{base}}/inventory?warehouseId=1&sku=KB-001
+
+### 4. Order 4 keyboards -> 201, stock is deducted in the same transaction
+POST {{base}}/orders
+Content-Type: application/json
+x-api-key: {{key}}
+
+{ "warehouseId": 1, "externalReference": "SHOP-5001", "items": [{ "productId": 1, "quantity": 4 }] }
+
+### 5. Available stock is now 11
+GET {{base}}/inventory?warehouseId=1&sku=KB-001
+
+### 6. Order 20 -> 409 INSUFFICIENT_STOCK, nothing changes
+POST {{base}}/orders
+Content-Type: application/json
+x-api-key: {{key}}
+
+{ "warehouseId": 1, "items": [{ "productId": 1, "quantity": 20 }] }
+
+### 7. The ledger: receipt +15 and order -4, with timestamps and references
+GET {{base}}/stock/movements?productId=1
+
+### 8. Same externalReference again -> 200 with the existing order, no second deduction
+POST {{base}}/orders
+Content-Type: application/json
+x-api-key: {{key}}
+
+{ "warehouseId": 1, "externalReference": "SHOP-5001", "items": [{ "productId": 1, "quantity": 4 }] }
+
+### 9. Order list (paginated)
+GET {{base}}/orders?page=1&pageSize=10
+
+### 10. Cancel the order -> stock goes back to 15 with a compensating +4 movement
+POST {{base}}/orders/1/cancel
+x-api-key: {{key}}
+
+### 11. Cancel again -> 409 ORDER_NOT_CANCELLABLE
+POST {{base}}/orders/1/cancel
+x-api-key: {{key}}
+
+### 12. A write without the key -> 401
+POST {{base}}/stock/receipts
+Content-Type: application/json
+
+{ "productId": 1, "warehouseId": 1, "quantity": 1, "reference": "no-key" }
+
+### 13. Invalid payload (negative quantity) -> 400 VALIDATION_ERROR
+POST {{base}}/orders
+Content-Type: application/json
+x-api-key: {{key}}
+
+{ "warehouseId": 1, "items": [{ "productId": 1, "quantity": -1 }] }
