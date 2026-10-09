@@ -94,8 +94,3 @@ The hosted demo's key is private, so visitors can browse but not change data. Ru
 - **Plain SQL over an ORM:** the locking is the point, so it stays visible.
 - **Money in integer cents** (EUR); formatting is the client's job.
 - Not built: payments, suppliers, warehouse management endpoints, rate limiting, read-only keys.
-
-## My contribution
-
-<!-- TODO: 1–3 sentences in your own words: designed the schema and stock policy, implemented the transactional
-order/cancel logic and the concurrency tests, wrote the OpenAPI docs and demo collection. -->
