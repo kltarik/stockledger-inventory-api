@@ -1,6 +1,2 @@
 node_modules/
 .env
-
-# local planning docs, not part of the repo
-02_Inventory_API_Build_Guide.md
-02_Inventory_API_Project_Guide.md
